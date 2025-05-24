@@ -1,4 +1,4 @@
-# Umit-interactive-mouthguard
+
 # Umit-interactive-mouthguard
 Okay, this is an impressive and well-documented project! Based on your detailed report, here's a README.md for your GitHub repository. I've tried to capture the essence and key details.
 
