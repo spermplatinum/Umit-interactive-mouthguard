@@ -1,0 +1,180 @@
+import time
+import math
+import board
+import analogio
+import adafruit_ble
+from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
+from adafruit_ble.services.standard.hid import HIDService
+from adafruit_hid.mouse import Mouse
+from seeed_xiao_nrf52840 import IMU
+
+# Configuration including per-sensor thresholds for the click sensor (FSR on board.D5)
+CONFIG = {
+    'ble_name': 'Umit 2.0',
+    'yaw_sensitivity': 25,
+    'yaw_deadzone': 0.08,
+    'pitch_sensitivity': 25,
+    'pitch_deadzone': 0.15,
+    'button_sensitivity': 1,
+    'smoothing': 0.2,
+    'calibration_samples': 100,
+    'calibration_delay': 3,
+    'rest_percentage': 0.3,
+    'invert_yaw': False,
+    'invert_pitch': True,
+    # FSR click sensor settings (applied to the sensor at index 4, board.D5)
+    'fsr_click': {
+         'press_threshold': 50000,   # When sensor value is less than this, it is considered pressed/tapped.
+         'hold_threshold': 5000,     # If sensor value remains below this value, a hold is triggered.
+         'hold_duration': 0.5,       # Time (in seconds) to consider the press as a hold.
+         'debounce_delay': 0.3       # (Optional) Debounce delay if needed for tap clicks.
+    }
+}
+
+# Initialize components
+imu = IMU()
+hid = HIDService()
+mouse = Mouse(hid.devices)
+advertisement = ProvideServicesAdvertisement(hid)
+ble = adafruit_ble.BLERadio()
+ble.name = CONFIG['ble_name']
+
+# Remove FSR0: Setup FSR pins for D1-D5 only.
+fsr_pins = [board.D1, board.D2, board.D3, board.D4, board.D5]
+fsr = [analogio.AnalogIn(pin) for pin in fsr_pins]
+
+# For movement, use sensors from D1-D4 (indices 0-3)
+movement_fsr_indices = [0, 1, 2, 3]
+# Click sensor is at index 4 (board.D5)
+click_fsr_index = 4
+
+# Variables for IMU processing and movement
+smooth_yaw = 0
+smooth_pitch = 0
+print_interval = 0.1  # Seconds between serial prints
+last_print = time.monotonic()
+# State nacgin varieable for rgw k=ckick swe=snihssijndnn
+# State machine variables for the click sensor
+# States: "released", "pressed", "held"
+click_state = "released"
+click_press_time = 0
+
+def calibrate_sensors():
+    # Calibration for movement sensors (if needed)
+    print("\nCalibrating sensors - ensure all are released!")
+    for i in range(CONFIG['calibration_delay'], 0, -1):
+        print(f"Starting in {i} seconds...")
+        time.sleep(1)
+
+    print("Calibrating movement sensors...")
+    samples = [[] for _ in range(len(fsr))]
+    for _ in range(CONFIG['calibration_samples']):
+        for i in range(len(fsr)):
+            samples[i].append(fsr[i].value)
+        time.sleep(0.01)
+
+    for i in range(len(fsr)):
+        avg_val = sum(samples[i]) / CONFIG['calibration_samples']
+        print(f"FSR{i+1} Average: {avg_val:.0f}")
+
+# Perform initial calibration (for movement sensors)
+calibrate_sensors()
+
+while True:
+    if not ble.connected:
+        ble.start_advertising(advertisement)
+        while not ble.connected:
+            pass
+        ble.stop_advertising()
+
+    while ble.connected:
+        current_time = time.monotonic()
+
+        # Read all FSR values
+        fsr_values = [pin.value for pin in fsr]
+
+        # For movement sensors, assume a generic press threshold (adjust as needed)
+        movement_press_threshold = 40000  # Example value
+        movement_pressed = [(fsr_values[i] < movement_press_threshold) for i in movement_fsr_indices]
+
+        # Print sensor data at a reduced rate
+        if current_time - last_print >= print_interval:
+            output = " | ".join([f"FSR{i+1}: {v}" for i, v in enumerate(fsr_values)])
+            print(output)
+            last_print = current_time
+
+        # IMU processing (unchanged)
+        accel_x, accel_y, accel_z = imu.acceleration
+        gyro_x, gyro_y, gyro_z = imu.gyro
+
+        smooth_yaw = CONFIG['smoothing'] * smooth_yaw + (1 - CONFIG['smoothing']) * gyro_z
+        smooth_pitch = CONFIG['smoothing'] * smooth_pitch + (1 - CONFIG['smoothing']) * gyro_y
+
+        move_x = 0
+        if abs(smooth_yaw) > CONFIG['yaw_deadzone']:
+            adj_yaw = smooth_yaw - (CONFIG['yaw_deadzone'] * (1 if smooth_yaw > 0 else -1))
+            move_x = int(adj_yaw * CONFIG['yaw_sensitivity'])
+            if CONFIG['invert_yaw']:
+                move_x *= -1
+
+        move_y = 0
+        if abs(smooth_pitch) > CONFIG['pitch_deadzone']:
+            adj_pitch = smooth_pitch - (CONFIG['pitch_deadzone'] * (1 if smooth_pitch > 0 else -1))
+            move_y = int(adj_pitch * CONFIG['pitch_sensitivity'])
+            if CONFIG['invert_pitch']:
+                move_y *= -1
+
+        # FSR-based directional movement using sensors from D1-D4:
+        btn_x = 0
+        btn_y = 0
+        # Mapping: FSR1 (D1): Up, FSR2 (D2): Down, FSR3 (D3): Left, FSR4 (D4): Right
+        if movement_pressed[0]:  # Up
+            btn_y += CONFIG['button_sensitivity']
+        if movement_pressed[1]:  # Down
+            btn_y -= CONFIG['button_sensitivity']
+        if movement_pressed[2]:  # Left
+            btn_x -= CONFIG['button_sensitivity']
+        if movement_pressed[3]:  # Right
+            btn_x += CONFIG['button_sensitivity']
+
+        total_x = move_x + btn_x
+        total_y = move_y + btn_y
+        if total_x or total_y:
+            mouse.move(x=total_x, y=total_y)
+
+        # (Optional) Left button hold based on movement sensors – here we press when any movement sensor is active.
+        if any(movement_pressed):
+            mouse.press(Mouse.LEFT_BUTTON)
+        else:
+            mouse.release(Mouse.LEFT_BUTTON)
+
+        # ----- Click Sensor (FSR on board.D5) Logic -----
+        # Retrieve settings for the click sensor.
+        fsr_click_cfg = CONFIG['fsr_click']
+        click_sensor_value = fsr_values[click_fsr_index]
+
+        # Check if sensor value indicates a press (value is lower than the press threshold)
+        if click_sensor_value < fsr_click_cfg['press_threshold']:
+            if click_state == "released":
+                # Transition from released to pressed – record the press time.
+                click_state = "pressed"
+                click_press_time = current_time
+            elif click_state == "pressed":
+                # If the sensor value is very low (below hold_threshold) and it remains low long enough, trigger hold.
+                if (click_sensor_value < fsr_click_cfg['hold_threshold'] and
+                    (current_time - click_press_time) >= fsr_click_cfg['hold_duration']):
+                    click_state = "held"
+                    mouse.press(Mouse.LEFT_BUTTON)
+            # If already in held state, continue holding.
+        else:
+            # Sensor value is above press_threshold – treat as released.
+            if click_state == "pressed":
+                # It was a short tap: trigger a click event.
+                mouse.click(Mouse.LEFT_BUTTON)
+            elif click_state == "held":
+                # Release the held button.
+                mouse.release(Mouse.LEFT_BUTTON)
+            click_state = "released"
+        # ----------------------------------------------
+
+        time.sleep(0.01)
