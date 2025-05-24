@@ -1,0 +1,315 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include "ESP32Servo.h"
+
+// ------------- Wi-Fi Settings -------------
+const char* ssid     = "Kana";
+const char* password = "kanat1234";
+
+// ------------- Create Web Server -------------
+WebServer server(80);
+
+// ------------- Servo Objects & Pins -------------
+Servo speedServo;   // Controls throttle/speed
+Servo steerServo;   // Controls steering
+
+const int speedServoPin = 13;   // Verify these pins on your board
+const int steerServoPin = 12;
+
+// ------------- Pulse Width Definitions -------------
+const int neutralPulse = 1500;   // Neutral (stop/centered)
+const int forwardPulse = 1380;   // Full forward throttle
+const int reversePulse = 1590;   // Full reverse throttle
+const int leftPulse    = 1350;   // Full left steering
+const int rightPulse   = 1643;   // Full right steering
+
+// ------------- Ramping Variables -------------
+// Throttle (speed)
+int currentSpeedPulse = neutralPulse;
+int targetSpeedPulse  = neutralPulse;
+
+// Steering
+int currentSteerPulse = neutralPulse;
+int targetSteerPulse  = neutralPulse;
+
+const int accelStep = 5;                 // Change (µs) per ramp update
+const unsigned long rampInterval = 20;   // Ramp update every 20ms
+unsigned long lastRampMillis = 0;
+
+// ------------- HTML Page -------------
+// This HTML page uses CSS and JavaScript to track mouse hover events.
+// When the mouse enters a button area, an AJAX GET request is sent to the ESP32.
+String htmlPage = R"rawliteral(
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Hoverboard Control</title>
+    <style>
+      body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      
+      h1 {
+        margin: 10px 0;
+      }
+      
+      .container {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        position: relative;
+        height: 100%;
+      }
+      
+      .direction-row {
+        display: flex;
+        flex: 1;
+        position: relative;
+      }
+      
+      .full-width-btn {
+        flex: 1;
+        min-height: 30%;
+        margin: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #4CAF50;
+        border: 2px solid #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+      }
+      
+      .full-width-btn:hover {
+        background: #45a049;
+        transform: scale(1.02);
+      }
+      
+      .side-btn {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 30%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #2196F3;
+        border: 2px solid #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+        clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+      }
+      
+      .side-btn:hover {
+        background: #0b7dda;
+        transform: scale(1.05);
+      }
+      
+      .left-btn {
+        left: 0;
+      }
+      
+      .right-btn {
+        right: 0;
+        transform: scaleX(-1);
+      }
+      
+      .right-btn:hover {
+        transform: scaleX(-1.05) scaleY(1.05);
+      }
+      
+      .center-btn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: #f44336;
+        border: 2px solid #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+        z-index: 10;
+      }
+      
+      .center-btn:hover {
+        background: #d32f2f;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+      
+      .middle-row {
+        flex: 2;
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hoverboard Control</h1>
+    <div class="container">
+      <div class="direction-row">
+        <div class="full-width-btn forward" 
+             onmouseenter="sendCommand('/forward')" 
+             onmouseleave="sendCommand('/stopAll')">
+             FORWARD
+        </div>
+      </div>
+      
+      <div class="middle-row">
+        <div class="side-btn left-btn" 
+             onmouseenter="sendCommand('/left')" 
+             onmouseleave="sendCommand('/stopAll')">
+             LEFT
+        </div>
+        
+        <div class="center-btn" 
+             onmouseenter="sendCommand('/stopAll')">
+             STOP
+        </div>
+        
+        <div class="side-btn right-btn" 
+             onmouseenter="sendCommand('/right')" 
+             onmouseleave="sendCommand('/stopAll')">
+             RIGHT
+        </div>
+      </div>
+      
+      <div class="direction-row">
+        <div class="full-width-btn backward" 
+             onmouseenter="sendCommand('/backward')" 
+             onmouseleave="sendCommand('/stopAll')">
+             BACKWARD
+        </div>
+      </div>
+    </div>
+    <script>
+      function sendCommand(command) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.open('GET', command, true);
+        xhttp.send();
+      }
+    </script>
+  </body>
+</html>
+)rawliteral";
+
+// ------------- Web Server Handlers -------------
+void handleRoot() {
+  server.send(200, "text/html", htmlPage);
+}
+
+void handleForward() {
+  targetSpeedPulse = forwardPulse; // Full forward throttle
+  server.send(200, "text/plain", "Forward");
+}
+
+void handleBackward() {
+  targetSpeedPulse = reversePulse; // Full reverse throttle
+  server.send(200, "text/plain", "Backward");
+}
+
+void handleLeft() {
+  targetSteerPulse = leftPulse; // Full left steering
+  server.send(200, "text/plain", "Left");
+}
+
+void handleRight() {
+  targetSteerPulse = rightPulse; // Full right steering
+  server.send(200, "text/plain", "Right");
+}
+
+void handleStopAll() {
+  // Reset both speed and steering to neutral
+  targetSpeedPulse = neutralPulse;
+  targetSteerPulse = neutralPulse;
+  server.send(200, "text/plain", "StopAll");
+}
+
+// ------------- Setup -------------
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  // Attach servos and set initial positions
+  speedServo.attach(speedServoPin);
+  steerServo.attach(steerServoPin);
+  speedServo.writeMicroseconds(currentSpeedPulse);
+  steerServo.writeMicroseconds(currentSteerPulse);
+  
+  // Connect to Wi-Fi
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("Connected! IP Address: ");
+  Serial.println(WiFi.localIP());
+  
+  // Define server routes
+  server.on("/", handleRoot);
+  server.on("/forward", handleForward);
+  server.on("/backward", handleBackward);
+  server.on("/left", handleLeft);
+  server.on("/right", handleRight);
+  server.on("/stopAll", handleStopAll);
+  
+  // Start the server
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+// ------------- Loop -------------
+void loop() {
+  server.handleClient();
+  
+  // Smooth ramping for servo control
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastRampMillis >= rampInterval) {
+    lastRampMillis = currentMillis;
+    
+    // Throttle ramping
+    if (currentSpeedPulse < targetSpeedPulse) {
+      currentSpeedPulse += accelStep;
+      if (currentSpeedPulse > targetSpeedPulse) currentSpeedPulse = targetSpeedPulse;
+    } else if (currentSpeedPulse > targetSpeedPulse) {
+      currentSpeedPulse -= accelStep;
+      if (currentSpeedPulse < targetSpeedPulse) currentSpeedPulse = targetSpeedPulse;
+    }
+    
+    // Steering ramping
+    if (currentSteerPulse < targetSteerPulse) {
+      currentSteerPulse += accelStep;
+      if (currentSteerPulse > targetSteerPulse) currentSteerPulse = targetSteerPulse;
+    } else if (currentSteerPulse > targetSteerPulse) {
+      currentSteerPulse -= accelStep;
+      if (currentSteerPulse < targetSteerPulse) currentSteerPulse = targetSteerPulse;
+    }
+    
+    // Write updated pulse widths to the servos
+    speedServo.writeMicroseconds(currentSpeedPulse);
+    steerServo.writeMicroseconds(currentSteerPulse);
+  }
+}
