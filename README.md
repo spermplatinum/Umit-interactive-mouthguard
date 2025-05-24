@@ -11,7 +11,7 @@ Okay, this is an impressive and well-documented project! Based on your detailed 
 
 ---
 
-**Authors:** Tazhikhan Kanat, Zhazykbay Ali, Kaldybay Baryskhan (12 "D")
+**Authors:** Tazhikhan Kanat, Zhazykbay Ali, Kaldybay Baryskhan 
 **Mentor:** David Tuganov
 **Scientific Supervisor:** Daulet Magzymov, Ph.D., University of Houston
 **Institution:** "Nazarbayev Intellectual Schools" AEO, Nazarbayev Intellectual School of Physics and Mathematics in Taraz
@@ -82,7 +82,8 @@ The Úmit mouthguard houses:
 6.  **Bluetooth Antenna:** For wireless communication.
 7.  **Biocompatible Plastic Casing:** Securely encloses all components.
 
-*(Refer to Figure 9-18 in the project report for 3D models and device assembly visuals)*
+
+
 
 ### Control Mechanism
 1.  **Head Movement:**
@@ -95,7 +96,7 @@ The Úmit mouthguard houses:
     *   Gentle biting on force buttons simulates left/right mouse clicks.
     *   Long presses can switch modes or power off the device.
 
-*(Refer to Figure 24-27 in the project report for diagrams of the principle of operation)*
+
 
 ### AI Integration
 A lightweight neural network runs on the Umit microchip:
@@ -123,10 +124,10 @@ The Úmit mouthguard connects via Bluetooth (BLE) to a controller (e.g., ESP8266
     *   Power: Rechargeable Li-ion battery, Type-C charging
     *   Casing: Hypoallergenic, biocompatible plastic
 *   **Software & AI:**
-    *   Firmware: Embedded C/C++ for the nRF52840
-    *   AI Model: Lightweight feed-forward neural network (trained possibly with TensorFlow/PyTorch, deployed on-device)
-    *   3D Modeling: Blender (for device casing design)
-    *   Wheelchair Interface: Arduino/ESP8266 programming
+    *   Firmware: Embedded C/C++ for the nRF52840( Mu editor)
+    *   AI Model: Tensorboard ( Moving to Edge Impulse platfortm)
+    *   3D Modeling: Blender 
+    *   Wheelchair Interface: Arduino/ESP8266 programming(STM 32 ST-LINK)
 
 ## Project Journey & Methodology Highlights
 
@@ -149,7 +150,8 @@ The Úmit mouthguard connects via Bluetooth (BLE) to a controller (e.g., ESP8266
 *   **Enhanced Independence:** Reduces reliance on caregivers for digital tasks and mobility.
 *   **Potential for Socio-Economic Inclusion:** Facilitates access to education, remote work (e.g., programming, design), and communication.
 
-*(Refer to Diagram 2 and Figure 28 in the project report for results and user feedback)*
+![изображение](https://github.com/user-attachments/assets/ea7b7dc1-f58e-47f0-b328-788e76cfd369)
+
 
 ## Practical Applications
 
@@ -165,12 +167,40 @@ The Úmit system has wide-ranging applications:
 *(This section is a placeholder. We encourage you to add GIFs, images, or a link to a demo video showcasing Úmit in action.)*
 
 For detailed diagrams, 3D models, and photos from the project development, please refer to the figures and appendices in our full project report.
-*   Device 3D Models: Figure 9, 10, 11
-*   Prototyping Process: Figure 12-17
-*   Completed Device: Figure 18
-*   Wheelchair Integration: Figure 19-21
-*   Principle of Operation: Figure 24-27
-*   User Testing: Figure 28, Appendices
+*   Device 3D Models:
+![изображение](https://github.com/user-attachments/assets/ee50f711-d557-40c4-a397-582f48cc73ff)
+![изображение](https://github.com/user-attachments/assets/744a2474-abfd-4317-b6a2-ec6b5a675dd9)
+![изображение](https://github.com/user-attachments/assets/b1dc088b-c116-46b1-b196-b161f3976e02)
+
+*   Prototyping Process: 
+![изображение](https://github.com/user-attachments/assets/bf737225-bd58-4618-99ae-28fbee6f15c9)
+![изображение](https://github.com/user-attachments/assets/a6dd416c-175e-4fc0-bfd8-b542788f13a9)
+![изображение](https://github.com/user-attachments/assets/1c4cf5c7-7ec3-4af8-923c-c29a95b3f1e8)
+![изображение](https://github.com/user-attachments/assets/6ae48a25-a045-4b2e-9bde-3e1fb0d8cd25)
+![изображение](https://github.com/user-attachments/assets/a2e9ff62-2616-4163-9cdc-49202c8816ae)
+![изображение](https://github.com/user-attachments/assets/13b43c87-6a20-4ad3-ac3c-bc96e88851d0)
+![изображение](https://github.com/user-attachments/assets/4752781f-8f1d-4af6-8639-78b429970b1f)
+
+
+*   Completed Device: 
+   ![изображение](https://github.com/user-attachments/assets/dfbd5d0e-3043-41f5-88e5-81dc84d6bd24)
+
+*   Wheelchair Integration:
+ ![изображение](https://github.com/user-attachments/assets/295f7058-67f4-4db1-8f23-a57037d7c9b7)
+
+*   Principle of Operation: 
+![изображение](https://github.com/user-attachments/assets/93de70ca-7d6a-4e94-85a3-a88bc3c4f142)
+![изображение](https://github.com/user-attachments/assets/455f7ac8-568f-4193-b2d1-9bdc4f72cb8e)
+![изображение](https://github.com/user-attachments/assets/f23ca8b0-9f9e-4ffe-82f7-8fc4e555bfab)
+![изображение](https://github.com/user-attachments/assets/ca0dba31-bfdc-47df-a3b4-291e1d4d7b20)
+![изображение](https://github.com/user-attachments/assets/788e878a-9deb-4393-9f9c-e04e85dd5ddc)
+![изображение](https://github.com/user-attachments/assets/b8f889dd-7a5e-4d82-8378-25dce8384f3f)
+
+
+
+*   User Testing:
+*   ![изображение](https://github.com/user-attachments/assets/b29b6a21-8d73-48d2-9d72-c3bf6c13fddf)
+
 
 ## Future Development
 
@@ -195,12 +225,7 @@ We extend our sincere gratitude to:
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 *(You'll need to create a LICENSE.md file with the MIT license text if you choose this license.)*
 
-## Contact
 
-For any inquiries, please reach out to:
-*   Tazhikhan Kanat: `[your_email_or_github_profile_kanat]`
-*   Zhazykbay Ali: `[your_email_or_github_profile_ali]`
-*   Kaldybay Baryskhan: `[your_email_or_github_profile_baryskhan]`
 
 Or open an issue in this repository.
 
@@ -209,28 +234,4 @@ Or open an issue in this repository.
 We believe Úmit holds the potential to significantly improve the lives of many individuals, fostering independence and inclusion in the digital world.
 
 
-Next Steps for You:
 
-Create the Repository: On GitHub, create a new repository for "Úmit".
-
-Add README.md: Copy the text above into a file named README.md in your repository.
-
-Replace Placeholders:
-
-Update the repository link: [![Project Status: Active Development](https://img.shields.io/badge/status-active-success.svg)](https://github.com/your-username/umit-project)
-
-Add your contact emails or GitHub profile links.
-
-Add a LICENSE.md file: If you choose MIT, you can easily find the standard MIT license text online and paste it into a LICENSE.md file.
-
-Upload Project Files: Add your code, design files (if you plan to share them like 3D models, schematics), and the full project report PDF to the repository. You might want to organize these into folders (e.g., /firmware, /hardware_design, /documentation).
-
-Add Visuals:
-
-Consider creating a short GIF or video demonstrating the device and embedding it or linking to it.
-
-You can embed images directly in the README if they are in your repository. For example: ![Umit Device Prototype](path/to/your/image_in_repo.jpg)
-
-Commit and Push: Save your changes and push them to GitHub.
-
-This README provides a solid foundation. You can always update and expand it as your project evolves! Good luck!
