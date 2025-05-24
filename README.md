@@ -223,7 +223,10 @@ We extend our sincere gratitude to:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-*(You'll need to create a LICENSE.md file with the MIT license text if you choose this license.)*
+![изображение](https://github.com/user-attachments/assets/9be6f3cf-8841-4347-82b5-a8640406116b)
+![Uploading изображение.png…]()
+
+
 
 
 
